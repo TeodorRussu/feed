@@ -2,7 +2,6 @@ package news.feed.email;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -43,9 +42,6 @@ public class EmailSender {
         helper.setTo(to);
 
         helper.setSubject(title);
-
-        // default = text/plain
-        //helper.setText("Check attachment for image!");
 
         // true = text/html
         helper.setText(content, true);

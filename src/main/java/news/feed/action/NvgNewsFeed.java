@@ -1,16 +1,9 @@
 package news.feed.action;
 
 import lombok.Data;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -94,6 +87,8 @@ public class NvgNewsFeed {
                     body = getBodyTextByParsingFile(newsDocumentPage).trim(); //doc parsing body extract method
                 }
 
+                body = cleanText(body);
+
                 body = body + "\n\n" + "Источник: " + newsURL;
 
                 novosti.add(
@@ -109,6 +104,13 @@ public class NvgNewsFeed {
             }
         }
         log.info("news added to collection");
+    }
+
+    private String cleanText(String body) {
+        body = body.replace("&nbsp;", "");
+        body = body.replace("  ", " ");
+        body = body.replace("\n ", "\n");
+        return body;
     }
 
     private String getBodyTextByParsingFile(Document newsDocumentPage) {
