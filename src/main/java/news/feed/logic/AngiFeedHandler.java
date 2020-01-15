@@ -1,5 +1,6 @@
 package news.feed.logic;
 
+import lombok.extern.slf4j.Slf4j;
 import news.feed.action.AngiNewsFeed;
 import news.feed.action.NvgNewsFeed;
 import news.feed.action.URLParameter;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 @Component
+@Slf4j
 public class AngiFeedHandler {
 
     @Autowired
@@ -37,18 +39,15 @@ public class AngiFeedHandler {
 
     public void nvgAction(String dateFrom) {
         LocalDate selectedDate = LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE);
-        dateFrom = LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE).format(DateTimeFormatter.ofPattern("dd.MM.uuuu"));
-
 
         try {
-            String url = "http://angi.ru/section/90886-%D0%9D%D0%B5%D1%84%D1%82%D1%8C-%D0%B8-%D0%B3%D0%B0%D0%B7/";
-            URLParameter parOne = URLParameter.builder().name(env.getProperty("dateFromParam")).value(dateFrom).build();
+            String url = env.getProperty("angiNewsPath");
             AngiNewsFeed feed = nvgCreate(url, selectedDate);
-            feed.action(dateFrom);
+            feed.action();
             feed.toExcel();
-            emailSender.sendEmailWithAttachment(StaticData.emailTo, env.getProperty("ngvEmailSubject"), env.getProperty("ngvEmailContent"), env.getProperty("ngvExcelFilename"), env.getProperty("ngvExcelExportPath"));
+            emailSender.sendEmailWithAttachment(StaticData.emailTo, env.getProperty("angiEmailSubject"), env.getProperty("angiEmailContent"), env.getProperty("angiExcelFilename"), env.getProperty("angiExcelExportPath"));
         } catch (IOException | URISyntaxException | MessagingException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
     }
 

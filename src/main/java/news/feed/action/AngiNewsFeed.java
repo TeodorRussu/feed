@@ -2,18 +2,13 @@ package news.feed.action;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.safety.Whitelist;
 import org.jsoup.select.Elements;
-import org.jsoup.select.NodeTraversor;
-import org.jsoup.select.NodeVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -22,83 +17,52 @@ import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Slf4j
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Data
-public class AngiNewsFeed {
+public class AngiNewsFeed extends Feed {
 
-    public static final String PAGEN_ = "PAGEN_";
     @Autowired
     private Environment env;
-
-    Elements allInteresting = new Elements();
-
-    List<String> relevantURLS = new ArrayList<>();
-
+    private Elements allInteresting = new Elements();
+    private Map<String, String> relevantURLS = new LinkedHashMap<>();
     private String url;
     private LocalDate selectedDate;
-    List<Novost> novosti = new ArrayList<>();
+    private List<Novost> novosti = new ArrayList<>();
+    private Map<String, List<Novost>> groupedNews = new HashMap<>();
+    private List<String> keywords = List.of("SOCAR", "баррель", "Роснефт", "Лукойл", "ЛУКОЙЛ", "Газпром нефт", "Башнефт", "Новатэк", "Татнефт", "Сибур", "КазМунайГаз", "Сокар", "Александр Новак", "Цен нефт", "цен нефт");
 
-
-    public void action(String dateFrom) throws IOException {
+    public void action() throws IOException {
         log.info("angi action begin");
+        log.info("url: " + url);
+        log.info("keywords: " + keywords);
         String workingURL = url;
+        extractNewsURLsToList(workingURL);
+        extractNewsToCollection();
 
-        outer: for (int i = 0; i <= 1000; i++) {
-            if (i > 0)
-                workingURL = url + String.format("%s/", i);
-            Document document = Jsoup.connect(workingURL).get();
-            Elements links = document.getElementsByClass("newslink");
 
-            for (Element novost : links) {
-                Elements dateValue = novost.getElementsByClass("date");
-                String dateVal = dateValue.text();
-                dateVal = dateValue.text().trim();
-                dateVal = dateVal.substring(0, dateVal.indexOf('/'));
-                String[] dateArray = dateVal.split(" ");
-                String day = dateArray[0].length() == 2? dateArray[0] : "0" + dateArray[0];
 
-                String month = extractMonth(dateArray[1]);
-                String year = dateArray.length == 3 ? dateArray[2] : Integer.toString(selectedDate.getYear());
+    }
 
-                LocalDate novostDate = LocalDate.parse(String.format("%s-%s-%s", year, month, day));
-
-                if (novostDate.isBefore(selectedDate))
-                    break outer;
-                Element el = novost.select("a").first();
-                String url = "http://angi.ru"+el.attr("href");
-
-//                allInteresting.add(novost.select("a").first());
-                relevantURLS.add(url);
-
-//                int size = allInteresting.size();
-            }
-        }
-
-        for (String novostURL : relevantURLS) {
-
+    private void extractNewsToCollection() {
+        log.info("start extract news to collections");
+        for (Map.Entry<String, String>me: relevantURLS.entrySet()) {
+            String novostURL  = me.getKey();
+            String date = me.getValue();
             try {
 
-
-
-
-
                 Document newsDocumentPage = Jsoup.connect(novostURL).get();
-                newsDocumentPage.select("br").append("\n");
-                newsDocumentPage.select("p").prepend("\n\n");
-                String title = newsDocumentPage.getElementsByTag("h1").first().text();
-//                Elements titleElements = newsDocumentPage.getElementsByTag("h1");
-//                String title = titleElements.get(0).childNodes().get(0).toString().trim();
 
+
+
+                //extract title
+                String title = newsDocumentPage.getElementsByTag("h1").first().text();
+
+                //extract novosti section
                 newsDocumentPage.getElementsByClass("lightbox").remove();
                 newsDocumentPage.getElementsByClass("newslink").remove();
                 newsDocumentPage.getElementsByClass("banner").remove();
@@ -107,43 +71,42 @@ public class AngiNewsFeed {
 
                 Elements articles = newsDocumentPage.getElementsByClass("text");
                 articles.get(0).getElementsByTag("a").remove();
-                Elements articles1 =  articles.get(0).getElementsByTag("p");
-
 
                 Document document = Jsoup.parse(articles.toString());
-                document.outputSettings(new Document.OutputSettings().prettyPrint(false));//makes html() preserve linebreaks and spacing
+                document.outputSettings(new Document.OutputSettings().prettyPrint(false));
                 document.select("br").append("\\n");
                 document.select("p").prepend("\\n");
                 String s = document.html().replaceAll("\\\\n", "\n");
-                String output =  Jsoup.clean(s, "", Whitelist.none(), new Document.OutputSettings().prettyPrint(false));
+                String body = Jsoup.clean(s, "", Whitelist.none(), new Document.OutputSettings().prettyPrint(false));
+
+                body = cleanText(body);
+                body = body + "Источник: " + novostURL.trim();
 
 
 
-                List<Node> nodes = articles.get(0).childNodes();
-
-                StringBuilder builder = new StringBuilder();
-                StringBuilder builder1 = new StringBuilder();
-
-                for (Element node:articles1){
-                    String text = Jsoup.parse(node.toString()).text();
-
-                    builder.append(text + "\n");
-                    builder1.append(node.outerHtml() + "\n");
+                outer: for (String keyword : keywords) {
+                    if (!keyword.contains(" ")) {
+                        if (title.contains(keyword) || body.contains(keyword)) {
+                            addNewToSpecificList(novostURL, title, body, date, keyword);
+                        }
+                        else {
+                            String [] expression = keyword.split(" ");
+                            for (String exprPart: expression){
+                                if (!title.contains(exprPart) && !body.contains(exprPart)){
+                                    continue outer;
+                                }
+                            }
+                            List<Novost> novosti = groupedNews.get(keyword);
+                            if (novosti == null) {
+                                novosti = new ArrayList<>();
+                            }
+                            addNewToSpecificList(novostURL, title, body, date, keyword);
+                        }
+                    }
                 }
 
-                System.out.println(articles.text());
-                System.out.println(".........");
-                System.out.println(output);
-                System.out.println(" ----------- ");
-                System.out.println();
-//
-//                novosti.add(
-//                        Novost.builder()
-//                                .body(body)
-//                                .title(title)
-//                                .url(newsURL)
-//                                .build()
-//                );
+                //create nvost object
+
                 Thread.sleep(200);
             } catch (Exception e) {
                 log.info("Exception" + e.getMessage());
@@ -152,16 +115,66 @@ public class AngiNewsFeed {
         log.info("news added to collection");
     }
 
-    public String text(Elements elements) {
-        StringBuilder sb = new StringBuilder();
-        for (Element element : elements) {
-            if (sb.length() != 0)
-                sb.append("\n");
-            sb.append(element.text());
+    private void addNewToSpecificList(String novostURL, String title, String body, String date, String keyword) {
+        List<Novost> novosti = groupedNews.get(keyword);
+        if (novosti == null) {
+            novosti = new ArrayList<>();
         }
-        return sb.toString();
+        log.info(String.format("keyword %s found", keyword));
+        novosti.add(
+                Novost.builder()
+                        .body(body)
+                        .title(title)
+                        .url(novostURL)
+                        .date(date)
+                        .build()
+        );
+        groupedNews.put(keyword, novosti);
     }
 
+    private void extractNewsURLsToList(String workingURL) throws IOException {
+        log.info("start adding news URLs to bulk list");
+        int i = 0;
+        while (true) {
+
+            if (i > 0) {
+                workingURL = url + String.format("%s/", i);
+            }
+            Document document = Jsoup.connect(workingURL).get();
+            Elements links = document.getElementsByClass("newslink");
+
+            for (Element novost : links) {
+                Elements dateValue = novost.getElementsByClass("date");
+                String dateVal = dateValue.text().trim();
+                LocalDate novostDate = getNovostDate(dateVal);
+
+                if (novostDate.isBefore(selectedDate)){
+                    log.info("added news URLs to bulk list");
+                    return;
+                }
+
+                //create novost url
+                Element el = novost.select("a").first();
+                String novostURL = env.getProperty("angiBaseURL") + el.attr("href");
+
+                relevantURLS.put(novostURL, novostDate.toString());
+            }
+            i++;
+        }
+
+    }
+
+    private LocalDate getNovostDate(String dateVal) {
+
+        dateVal = dateVal.substring(0, dateVal.indexOf('/'));
+        String[] dateArray = dateVal.split(" ");
+        String day = dateArray[0].length() == 2 ? dateArray[0] : "0" + dateArray[0];
+
+        String month = extractMonth(dateArray[1]);
+        String year = dateArray.length == 3 ? dateArray[2] : Integer.toString(LocalDate.now().getYear());
+
+        return LocalDate.parse(String.format("%s-%s-%s", year, month, day));
+    }
 
     private String extractMonth(String s) {
         switch (s) {
@@ -196,44 +209,53 @@ public class AngiNewsFeed {
     }
 
     private String cleanText(String body) {
-        body = body.replace("&nbsp;", "");
-        body = body.replace("  ", " ");
-        body = body.replace("\n ", "\n");
+        body = body.replace("&nbsp;", " ");
+        for (int i = 0; i < 5; i++) {
+            body = body.replace("  ", " ");
+        }
+        for (int i = 0; i < 5; i++) {
+            body = body.replace("\n ", "\n");
+        }
+        for (int i = 0; i < 5; i++) {
+            body = body.replace("\n\n\n", "\n\n");
+        }
+        body = body.trim();
+        body = body + "\n\n";
+
         return body;
     }
 
-    private String getBodyTextByParsingFile(Document newsDocumentPage) {
-        String textDoc = newsDocumentPage.text();
-        int contentStartIndex = textDoc.indexOf("[DETAIL_TEXT] => ");
-        int contentEndIndex = textDoc.indexOf("[~DETAIL_TEXT] =>");
-
-        textDoc = textDoc.substring(contentStartIndex, contentEndIndex);
-        return textDoc.replace("[DETAIL_TEXT] => ", "");
-    }
-
-    private String getNovostURL(Element element) {
-        String newsURL;
-        Elements links = element.getElementsByClass("post-card");
-        String baseURL = env.getProperty("ngvBaseURL");
-        String urlToAppend = links.get(0).attributes().get("href");
-        newsURL = baseURL + urlToAppend;
-        return newsURL;
-    }
-
-
     public void toExcel() throws IOException {
+        log.info("start exporting to excel");
+        Workbook workbook = new XSSFWorkbook();
 
-        String[] columns = {"Title", "Comment", "Body"};
+        for (String group : groupedNews.keySet()) {
+            List<Novost> novosti = groupedNews.get(group);
+            performToExcel(workbook, group, novosti);
+        }
 
-        Workbook workbook = new XSSFWorkbook(); // new HSSFWorkbook() for generating `.xls` file
+        // Write the output to a file
+        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(env.getProperty("angiExcelExportPath")));
+        workbook.write(fileOut);
+        fileOut.close();
+
+        // Closing the workbook
+        workbook.close();
+    }
+
+    public void performToExcel( Workbook workbook, String sheetName, List<Novost> novosti) throws IOException {
+
+
+        String[] columns = {"Title", "Comment", "Body", "Date"};
+
+         // new HSSFWorkbook() for generating `.xls` file
 
         // Create a Sheet
-        Sheet sheet = workbook.createSheet(env.getProperty("ngvExcelSheetName"));
+        Sheet sheet = workbook.createSheet(sheetName);
         sheet.setDefaultRowHeight((short) 600);
 
-        CellStyle headerCellStyle = setCellStyle(workbook, 12, IndexedColors.BLUE_GREY);
-        CellStyle titleCellStyle = setCellStyle(workbook, 12, IndexedColors.GREY_80_PERCENT);
-        CellStyle bodyCellStyle = setCellStyle(workbook, 12, IndexedColors.GREY_80_PERCENT);
+        CellStyle headerCellStyle = setCellStyle(workbook, IndexedColors.BLUE_GREY);
+        CellStyle cellStyle = setCellStyle(workbook, IndexedColors.GREY_80_PERCENT);
 
         // Create a Row
         Row headerRow = sheet.createRow(0);
@@ -250,23 +272,18 @@ public class AngiNewsFeed {
         for (Novost novost : novosti) {
             Row row = sheet.createRow(rowNum++);
 
-            Cell titleCell = createCellAndItsStyle(titleCellStyle, row, 0);
+            Cell titleCell = createCellAndItsStyle(cellStyle, row, 0);
             titleCell.setCellValue(novost.getTitle());
 
-            Cell bodyCell = createCellAndItsStyle(bodyCellStyle, row, 2);
+            Cell bodyCell = createCellAndItsStyle(cellStyle, row, 2);
             bodyCell.setCellValue(novost.getBody());
+
+            Cell dateCell = createCellAndItsStyle(cellStyle, row, 3);
+            dateCell.setCellValue(novost.getDate());
         }
         for (int i = 0; i < columns.length; i++) {
             sheet.autoSizeColumn(i);
         }
-
-        // Write the output to a file
-        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(env.getProperty("ngvExcelExportPath")));
-        workbook.write(fileOut);
-        fileOut.close();
-
-        // Closing the workbook
-        workbook.close();
 
     }
 
@@ -276,31 +293,14 @@ public class AngiNewsFeed {
         return titleCell;
     }
 
-    private CellStyle setCellStyle(Workbook workbook, int fontHeight, IndexedColors color) {
+    private CellStyle setCellStyle(Workbook workbook, IndexedColors color) {
         Font headerFont = workbook.createFont();
 
-        headerFont.setFontHeightInPoints((short) fontHeight);
+        headerFont.setFontHeightInPoints((short) 12);
         headerFont.setColor(color.getIndex());
         CellStyle headerCellStyle = workbook.createCellStyle();
         headerCellStyle.setFont(headerFont);
         return headerCellStyle;
     }
-}
 
-class TunedElements extends Elements {
-
-    @Override
-    public String text() {
-        StringBuilder sb = new StringBuilder();
-
-        Element element;
-        for(Iterator var2 = this.iterator(); var2.hasNext(); sb.append(element.text())) {
-            element = (Element)var2.next();
-            if (sb.length() != 0) {
-                sb.append("\n\n");
-            }
-        }
-
-        return sb.toString();
-    }
 }

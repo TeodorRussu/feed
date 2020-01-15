@@ -20,18 +20,6 @@ public class EmailSender {
     @Autowired
     private Environment env;
 
-    public void sendEmail() {
-
-        SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setTo("teodor.russu@elm327.ro", "teodor_russu@yahoo.com");
-
-        msg.setSubject("Testing from Spring Boot");
-        msg.setText("Hello World \n Spring Boot Email");
-
-        javaMailSender.send(msg);
-
-    }
-
     public void sendEmailWithAttachment(String to, String title, String content, String filename, String path) throws MessagingException, IOException {
 
         MimeMessage msg = javaMailSender.createMimeMessage();

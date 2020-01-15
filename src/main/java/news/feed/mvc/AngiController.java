@@ -22,7 +22,7 @@ public class AngiController {
     }
 
     @GetMapping("/export")
-    String processNvgNewsFeed(@RequestParam("${dateFromParam}") String dateFrom,
+    public String processNvgNewsFeed(@RequestParam("${dateFromParam}") String dateFrom,
                              @RequestParam("email") String email){
 
         StaticData.emailTo = email;

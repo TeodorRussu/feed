@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Data
-public class NvgNewsFeed {
+public class NvgNewsFeed extends Feed{
 
     public static final String PAGEN_ = "PAGEN_";
     @Autowired
