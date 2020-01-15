@@ -10,7 +10,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
+import org.jsoup.safety.Whitelist;
 import org.jsoup.select.Elements;
+import org.jsoup.select.NodeTraversor;
+import org.jsoup.select.NodeVisitor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -22,6 +25,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -84,26 +88,54 @@ public class AngiNewsFeed {
 
             try {
 
+
+
+
+
                 Document newsDocumentPage = Jsoup.connect(novostURL).get();
+                newsDocumentPage.select("br").append("\n");
+                newsDocumentPage.select("p").prepend("\n\n");
                 String title = newsDocumentPage.getElementsByTag("h1").first().text();
 //                Elements titleElements = newsDocumentPage.getElementsByTag("h1");
 //                String title = titleElements.get(0).childNodes().get(0).toString().trim();
 
-                String articles = newsDocumentPage.getElementsByClass("text").outerHtml();
-//                List<Node> bodyParagraphs = articles.get(0).childNodes();
-//
-//                String body =
-//                        bodyParagraphs.stream().filter(child -> child.getClass().equals(TextNode.class))
-//                                .map(Node::toString).collect(Collectors.joining("\n"));
-//                body = body.trim();
-//
-//                if (body.trim().isEmpty()) {
-//                    body = getBodyTextByParsingFile(newsDocumentPage).trim(); //doc parsing body extract method
-//                }
-//
-//                body = cleanText(body);
-//
-//                //body = body + "\n\n" + "Источник: " + newsURL;
+                newsDocumentPage.getElementsByClass("lightbox").remove();
+                newsDocumentPage.getElementsByClass("newslink").remove();
+                newsDocumentPage.getElementsByClass("banner").remove();
+                newsDocumentPage.getElementsByAttributeValue("data-position", "desktop").remove();
+                newsDocumentPage.getElementsByAttributeValue("style", "width:100%;").remove();
+
+                Elements articles = newsDocumentPage.getElementsByClass("text");
+                articles.get(0).getElementsByTag("a").remove();
+                Elements articles1 =  articles.get(0).getElementsByTag("p");
+
+
+                Document document = Jsoup.parse(articles.toString());
+                document.outputSettings(new Document.OutputSettings().prettyPrint(false));//makes html() preserve linebreaks and spacing
+                document.select("br").append("\\n");
+                document.select("p").prepend("\\n");
+                String s = document.html().replaceAll("\\\\n", "\n");
+                String output =  Jsoup.clean(s, "", Whitelist.none(), new Document.OutputSettings().prettyPrint(false));
+
+
+
+                List<Node> nodes = articles.get(0).childNodes();
+
+                StringBuilder builder = new StringBuilder();
+                StringBuilder builder1 = new StringBuilder();
+
+                for (Element node:articles1){
+                    String text = Jsoup.parse(node.toString()).text();
+
+                    builder.append(text + "\n");
+                    builder1.append(node.outerHtml() + "\n");
+                }
+
+                System.out.println(articles.text());
+                System.out.println(".........");
+                System.out.println(output);
+                System.out.println(" ----------- ");
+                System.out.println();
 //
 //                novosti.add(
 //                        Novost.builder()
@@ -119,6 +151,17 @@ public class AngiNewsFeed {
         }
         log.info("news added to collection");
     }
+
+    public String text(Elements elements) {
+        StringBuilder sb = new StringBuilder();
+        for (Element element : elements) {
+            if (sb.length() != 0)
+                sb.append("\n");
+            sb.append(element.text());
+        }
+        return sb.toString();
+    }
+
 
     private String extractMonth(String s) {
         switch (s) {
@@ -241,5 +284,23 @@ public class AngiNewsFeed {
         CellStyle headerCellStyle = workbook.createCellStyle();
         headerCellStyle.setFont(headerFont);
         return headerCellStyle;
+    }
+}
+
+class TunedElements extends Elements {
+
+    @Override
+    public String text() {
+        StringBuilder sb = new StringBuilder();
+
+        Element element;
+        for(Iterator var2 = this.iterator(); var2.hasNext(); sb.append(element.text())) {
+            element = (Element)var2.next();
+            if (sb.length() != 0) {
+                sb.append("\n\n");
+            }
+        }
+
+        return sb.toString();
     }
 }
