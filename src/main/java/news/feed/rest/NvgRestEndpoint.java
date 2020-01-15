@@ -17,7 +17,7 @@ public class NvgRestEndpoint {
     @GetMapping
     void processNvgNewsFeed(@RequestParam("${dateFromParam}") String dateFrom,
                             @RequestParam("${dateToParam}") String dateTo,
-                            @RequestParam("${paramQ}") String q){
+                            @RequestParam("${paramQ}") String q) {
 
         nvgFeedHandler.nvgAction(dateFrom, dateTo, q);
     }

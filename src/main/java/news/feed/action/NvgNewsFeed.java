@@ -29,19 +29,16 @@ import java.util.stream.Collectors;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Data
-public class NvgNewsFeed extends Feed{
+public class NvgNewsFeed extends Feed {
 
     public static final String PAGEN_ = "PAGEN_";
+    Elements allInteresting = new Elements();
+    List<Novost> novosti = new ArrayList<>();
     @Autowired
     private Environment env;
-
-    Elements allInteresting = new Elements();
-
     private int first = Integer.MAX_VALUE;
     private int last = Integer.MIN_VALUE;
     private String url;
-    List<Novost> novosti = new ArrayList<>();
-
 
     public void init(String baseURL, URLParameter... parameters) throws URISyntaxException {
         URIBuilder builder = new URIBuilder(baseURL);

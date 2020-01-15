@@ -23,8 +23,8 @@ public class NgvController {
 
     @GetMapping("/export")
     String processNvgNewsFeed(@RequestParam("${dateFromParam}") String dateFrom,
-                            @RequestParam("${dateToParam}") String dateTo,
-                            @RequestParam("${paramQ}") String q, @RequestParam("email") String email){
+                              @RequestParam("${dateToParam}") String dateTo,
+                              @RequestParam("${paramQ}") String q, @RequestParam("email") String email) {
 
         StaticData.emailTo = email;
         nvgFeedHandler.nvgAction(dateFrom, dateTo, q);

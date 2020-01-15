@@ -45,18 +45,16 @@ public class AngiNewsFeed extends Feed {
         extractNewsToCollection();
 
 
-
     }
 
     private void extractNewsToCollection() {
         log.info("start extract news to collections");
-        for (Map.Entry<String, String>me: relevantURLS.entrySet()) {
-            String novostURL  = me.getKey();
+        for (Map.Entry<String, String> me : relevantURLS.entrySet()) {
+            String novostURL = me.getKey();
             String date = me.getValue();
             try {
 
                 Document newsDocumentPage = Jsoup.connect(novostURL).get();
-
 
 
                 //extract title
@@ -83,16 +81,15 @@ public class AngiNewsFeed extends Feed {
                 body = body + "Источник: " + novostURL.trim();
 
 
-
-                outer: for (String keyword : keywords) {
+                outer:
+                for (String keyword : keywords) {
                     if (!keyword.contains(" ")) {
                         if (title.contains(keyword) || body.contains(keyword)) {
                             addNewToSpecificList(novostURL, title, body, date, keyword);
-                        }
-                        else {
-                            String [] expression = keyword.split(" ");
-                            for (String exprPart: expression){
-                                if (!title.contains(exprPart) && !body.contains(exprPart)){
+                        } else {
+                            String[] expression = keyword.split(" ");
+                            for (String exprPart : expression) {
+                                if (!title.contains(exprPart) && !body.contains(exprPart)) {
                                     continue outer;
                                 }
                             }
@@ -148,7 +145,7 @@ public class AngiNewsFeed extends Feed {
                 String dateVal = dateValue.text().trim();
                 LocalDate novostDate = getNovostDate(dateVal);
 
-                if (novostDate.isBefore(selectedDate)){
+                if (novostDate.isBefore(selectedDate)) {
                     log.info("added news URLs to bulk list");
                     return;
                 }
@@ -243,12 +240,12 @@ public class AngiNewsFeed extends Feed {
         workbook.close();
     }
 
-    public void performToExcel( Workbook workbook, String sheetName, List<Novost> novosti) throws IOException {
+    public void performToExcel(Workbook workbook, String sheetName, List<Novost> novosti) throws IOException {
 
 
         String[] columns = {"Title", "Comment", "Body", "Date"};
 
-         // new HSSFWorkbook() for generating `.xls` file
+        // new HSSFWorkbook() for generating `.xls` file
 
         // Create a Sheet
         Sheet sheet = workbook.createSheet(sheetName);

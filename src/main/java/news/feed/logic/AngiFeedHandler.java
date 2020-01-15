@@ -2,8 +2,6 @@ package news.feed.logic;
 
 import lombok.extern.slf4j.Slf4j;
 import news.feed.action.AngiNewsFeed;
-import news.feed.action.NvgNewsFeed;
-import news.feed.action.URLParameter;
 import news.feed.email.EmailSender;
 import news.feed.env.StaticData;
 import org.springframework.beans.factory.annotation.Autowired;

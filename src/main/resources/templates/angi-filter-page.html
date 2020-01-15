@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport">
 
     <link rel="stylesheet" th:href="@{webjars/bootstrap/4.2.1/css/bootstrap.min.css}"/>
     <link rel="stylesheet" th:href="@{/css/main.css}"/>
@@ -10,11 +10,11 @@
 </head>
 <body>
 
-<form action="#" th:action="@{/angi/export}" method="get">
-    <input type="date" name="DATE_ACTIVE_FROM"/>
-    <input type="date" name="DATE_ACTIVE_TO"/>
-    <input type="text" name="q" placeholder="">
-    <p><label>enail: </label><input type="text" name="email" placeholder=""></p>
+<form action="#" method="get" th:action="@{/angi/export}">
+    <input name="DATE_ACTIVE_FROM" type="date"/>
+    <input name="DATE_ACTIVE_TO" type="date"/>
+    <input name="q" placeholder="" type="text">
+    <p><label>enail: </label><input name="email" placeholder="" type="text"></p>
     <p><input type="submit" value="Submit"/></p>
 
 </form>
