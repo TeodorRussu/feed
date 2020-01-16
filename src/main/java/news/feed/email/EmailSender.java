@@ -7,19 +7,22 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.IOException;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+
 @Component
 public class EmailSender {
+
     @Autowired
     private JavaMailSender javaMailSender;
     @Autowired
     private Environment env;
 
-    public void sendEmailWithAttachment(String to, String title, String content, String filename, String path) throws MessagingException, IOException {
+    public void sendEmailWithAttachment(String to, String title, String content, String filename, String path)
+        throws MessagingException, IOException {
 
         MimeMessage msg = javaMailSender.createMimeMessage();
 

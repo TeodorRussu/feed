@@ -1,9 +1,11 @@
 package news.feed.action;
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import news.feed.config.YamlConfig;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,7 +16,6 @@ import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.io.FileOutputStream;
@@ -29,13 +30,14 @@ import java.util.stream.Collectors;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Data
+@RequiredArgsConstructor
 public class NvgNewsFeed extends Feed {
 
     public static final String PAGEN_ = "PAGEN_";
-    Elements allInteresting = new Elements();
-    List<Novost> novosti = new ArrayList<>();
     @Autowired
-    private Environment env;
+    private final YamlConfig yamlConfig;
+    private Elements allInteresting = new Elements();
+    private List<Novost> novosti = new ArrayList<>();
     private int first = Integer.MAX_VALUE;
     private int last = Integer.MIN_VALUE;
     private String url;
@@ -53,7 +55,6 @@ public class NvgNewsFeed extends Feed {
         Document document = Jsoup.connect(url).get();
 
         setPageIndexes(document);
-
 
         for (int i = first; i <= last; i++) {
             String pagedURL = url + String.format("&PAGEN_%d=%d", first, i);
@@ -76,8 +77,8 @@ public class NvgNewsFeed extends Feed {
                 List<Node> bodyParagraphs = articles.get(0).childNodes();
 
                 String body =
-                        bodyParagraphs.stream().filter(child -> child.getClass().equals(TextNode.class))
-                                .map(Node::toString).collect(Collectors.joining("\n"));
+                    bodyParagraphs.stream().filter(child -> child.getClass().equals(TextNode.class))
+                        .map(Node::toString).collect(Collectors.joining("\n"));
                 body = body.trim();
 
                 if (body.trim().isEmpty()) {
@@ -85,29 +86,16 @@ public class NvgNewsFeed extends Feed {
                 }
 
                 body = cleanText(body);
+                body = body + "Источник: " + newsURL;
 
-                body = body + "\n\n" + "Источник: " + newsURL;
+                createAndAddNewToList(newsURL, title, body, null, novosti);
 
-                novosti.add(
-                        Novost.builder()
-                                .body(body)
-                                .title(title)
-                                .url(newsURL)
-                                .build()
-                );
                 Thread.sleep(200);
             } catch (Exception e) {
                 log.info("Exception" + e.getMessage());
             }
         }
         log.info("news added to collection");
-    }
-
-    private String cleanText(String body) {
-        body = body.replace("&nbsp;", "");
-        body = body.replace("  ", " ");
-        body = body.replace("\n ", "\n");
-        return body;
     }
 
     private String getBodyTextByParsingFile(Document newsDocumentPage) {
@@ -122,7 +110,7 @@ public class NvgNewsFeed extends Feed {
     private String getNovostURL(Element element) {
         String newsURL;
         Elements links = element.getElementsByClass("post-card");
-        String baseURL = env.getProperty("ngvBaseURL");
+        String baseURL = yamlConfig.getNgvBaseURL();
         String urlToAppend = links.get(0).attributes().get("href");
         newsURL = baseURL + urlToAppend;
         return newsURL;
@@ -157,73 +145,25 @@ public class NvgNewsFeed extends Feed {
                 } catch (NumberFormatException exception) {
                     log.info(exception.getMessage());
                 }
-
             }
         }
     }
 
     public void toExcel() throws IOException {
+        log.info("start exporting to excel");
+        Workbook workbook = new XSSFWorkbook();
 
         String[] columns = {"Title", "Comment", "Body"};
 
-        Workbook workbook = new XSSFWorkbook(); // new HSSFWorkbook() for generating `.xls` file
-
-        // Create a Sheet
-        Sheet sheet = workbook.createSheet(env.getProperty("ngvExcelSheetName"));
-        sheet.setDefaultRowHeight((short) 600);
-
-        CellStyle headerCellStyle = setCellStyle(workbook, 12, IndexedColors.BLUE_GREY);
-        CellStyle titleCellStyle = setCellStyle(workbook, 12, IndexedColors.GREY_80_PERCENT);
-        CellStyle bodyCellStyle = setCellStyle(workbook, 12, IndexedColors.GREY_80_PERCENT);
-
-        // Create a Row
-        Row headerRow = sheet.createRow(0);
-
-        // Create cells
-        for (int i = 0; i < columns.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(columns[i]);
-            cell.setCellStyle(headerCellStyle);
-        }
-
-        // Create rows with data
-        int rowNum = 1;
-        for (Novost novost : novosti) {
-            Row row = sheet.createRow(rowNum++);
-
-            Cell titleCell = createCellAndItsStyle(titleCellStyle, row, 0);
-            titleCell.setCellValue(novost.getTitle());
-
-            Cell bodyCell = createCellAndItsStyle(bodyCellStyle, row, 2);
-            bodyCell.setCellValue(novost.getBody());
-        }
-        for (int i = 0; i < columns.length; i++) {
-            sheet.autoSizeColumn(i);
-        }
+        performToExcel(workbook, yamlConfig.getNgvExcelSheetName(), novosti, columns);
 
         // Write the output to a file
-        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(env.getProperty("ngvExcelExportPath")));
+        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(yamlConfig.getNgvExcelExportPath()));
         workbook.write(fileOut);
         fileOut.close();
 
         // Closing the workbook
         workbook.close();
-
     }
 
-    private Cell createCellAndItsStyle(CellStyle titleCellStyle, Row row, int column) {
-        Cell titleCell = row.createCell(column);
-        titleCell.setCellStyle(titleCellStyle);
-        return titleCell;
-    }
-
-    private CellStyle setCellStyle(Workbook workbook, int fontHeight, IndexedColors color) {
-        Font headerFont = workbook.createFont();
-
-        headerFont.setFontHeightInPoints((short) fontHeight);
-        headerFont.setColor(color.getIndex());
-        CellStyle headerCellStyle = workbook.createCellStyle();
-        headerCellStyle.setFont(headerFont);
-        return headerCellStyle;
-    }
 }

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class Novost {
+
     private String url;
     private String title;
     private String body;

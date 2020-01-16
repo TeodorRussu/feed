@@ -2,7 +2,8 @@ package news.feed.action;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
+import news.feed.config.YamlConfig;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -18,7 +19,12 @@ import org.springframework.stereotype.Component;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -28,13 +34,19 @@ public class AngiNewsFeed extends Feed {
 
     @Autowired
     private Environment env;
+    @Autowired
+    private YamlConfig yamlConfig;
+
     private Elements allInteresting = new Elements();
     private Map<String, String> relevantURLS = new LinkedHashMap<>();
     private String url;
     private LocalDate selectedDate;
     private List<Novost> novosti = new ArrayList<>();
     private Map<String, List<Novost>> groupedNews = new HashMap<>();
-    private List<String> keywords = List.of("SOCAR", "баррель", "Роснефт", "Лукойл", "ЛУКОЙЛ", "Газпром нефт", "Башнефт", "Новатэк", "Татнефт", "Сибур", "КазМунайГаз", "Сокар", "Александр Новак", "Цен нефт", "цен нефт");
+    private List<String>
+        keywords =
+        List.of("SOCAR", "баррель", "Роснефт", "Лукойл", "ЛУКОЙЛ", "Газпром нефт", "Башнефт", "Новатэк", "Татнефт",
+                "Сибур", "КазМунайГаз", "Сокар", "Александр Новак", "Цен нефт", "цен нефт");
 
     public void action() throws IOException {
         log.info("angi action begin");
@@ -55,7 +67,6 @@ public class AngiNewsFeed extends Feed {
             try {
 
                 Document newsDocumentPage = Jsoup.connect(novostURL).get();
-
 
                 //extract title
                 String title = newsDocumentPage.getElementsByTag("h1").first().text();
@@ -80,7 +91,6 @@ public class AngiNewsFeed extends Feed {
                 body = cleanText(body);
                 body = body + "Источник: " + novostURL.trim();
 
-
                 outer:
                 for (String keyword : keywords) {
                     if (!keyword.contains(" ")) {
@@ -102,8 +112,6 @@ public class AngiNewsFeed extends Feed {
                     }
                 }
 
-                //create nvost object
-
                 Thread.sleep(200);
             } catch (Exception e) {
                 log.info("Exception" + e.getMessage());
@@ -118,16 +126,10 @@ public class AngiNewsFeed extends Feed {
             novosti = new ArrayList<>();
         }
         log.info(String.format("keyword %s found", keyword));
-        novosti.add(
-                Novost.builder()
-                        .body(body)
-                        .title(title)
-                        .url(novostURL)
-                        .date(date)
-                        .build()
-        );
+        createAndAddNewToList(novostURL, title, body, date, novosti);
         groupedNews.put(keyword, novosti);
     }
+
 
     private void extractNewsURLsToList(String workingURL) throws IOException {
         log.info("start adding news URLs to bulk list");
@@ -152,7 +154,8 @@ public class AngiNewsFeed extends Feed {
 
                 //create novost url
                 Element el = novost.select("a").first();
-                String novostURL = env.getProperty("angiBaseURL") + el.attr("href");
+//                String novostURL = env.getProperty("angiBaseURL") + el.attr("href");
+                String novostURL = yamlConfig.getAngiBaseURL() + el.attr("href");
 
                 relevantURLS.put(novostURL, novostDate.toString());
             }
@@ -205,99 +208,28 @@ public class AngiNewsFeed extends Feed {
 
     }
 
-    private String cleanText(String body) {
-        body = body.replace("&nbsp;", " ");
-        for (int i = 0; i < 5; i++) {
-            body = body.replace("  ", " ");
-        }
-        for (int i = 0; i < 5; i++) {
-            body = body.replace("\n ", "\n");
-        }
-        for (int i = 0; i < 5; i++) {
-            body = body.replace("\n\n\n", "\n\n");
-        }
-        body = body.trim();
-        body = body + "\n\n";
-
-        return body;
-    }
 
     public void toExcel() throws IOException {
         log.info("start exporting to excel");
         Workbook workbook = new XSSFWorkbook();
 
+        String columns[] = {"Title", "Comment", "Body", "Date"};
+
         for (String group : groupedNews.keySet()) {
             List<Novost> novosti = groupedNews.get(group);
-            performToExcel(workbook, group, novosti);
+            performToExcel(workbook, group, novosti, columns);
         }
 
         // Write the output to a file
-        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(env.getProperty("angiExcelExportPath")));
+        FileOutputStream
+            fileOut =
+            new FileOutputStream(
+                Objects.requireNonNull(yamlConfig.getAngiExcelExportPath()));
         workbook.write(fileOut);
         fileOut.close();
 
         // Closing the workbook
         workbook.close();
-    }
-
-    public void performToExcel(Workbook workbook, String sheetName, List<Novost> novosti) throws IOException {
-
-
-        String[] columns = {"Title", "Comment", "Body", "Date"};
-
-        // new HSSFWorkbook() for generating `.xls` file
-
-        // Create a Sheet
-        Sheet sheet = workbook.createSheet(sheetName);
-        sheet.setDefaultRowHeight((short) 600);
-
-        CellStyle headerCellStyle = setCellStyle(workbook, IndexedColors.BLUE_GREY);
-        CellStyle cellStyle = setCellStyle(workbook, IndexedColors.GREY_80_PERCENT);
-
-        // Create a Row
-        Row headerRow = sheet.createRow(0);
-
-        // Create cells
-        for (int i = 0; i < columns.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(columns[i]);
-            cell.setCellStyle(headerCellStyle);
-        }
-
-        // Create rows with data
-        int rowNum = 1;
-        for (Novost novost : novosti) {
-            Row row = sheet.createRow(rowNum++);
-
-            Cell titleCell = createCellAndItsStyle(cellStyle, row, 0);
-            titleCell.setCellValue(novost.getTitle());
-
-            Cell bodyCell = createCellAndItsStyle(cellStyle, row, 2);
-            bodyCell.setCellValue(novost.getBody());
-
-            Cell dateCell = createCellAndItsStyle(cellStyle, row, 3);
-            dateCell.setCellValue(novost.getDate());
-        }
-        for (int i = 0; i < columns.length; i++) {
-            sheet.autoSizeColumn(i);
-        }
-
-    }
-
-    private Cell createCellAndItsStyle(CellStyle titleCellStyle, Row row, int column) {
-        Cell titleCell = row.createCell(column);
-        titleCell.setCellStyle(titleCellStyle);
-        return titleCell;
-    }
-
-    private CellStyle setCellStyle(Workbook workbook, IndexedColors color) {
-        Font headerFont = workbook.createFont();
-
-        headerFont.setFontHeightInPoints((short) 12);
-        headerFont.setColor(color.getIndex());
-        CellStyle headerCellStyle = workbook.createCellStyle();
-        headerCellStyle.setFont(headerFont);
-        return headerCellStyle;
     }
 
 }
