@@ -3,6 +3,7 @@ package news.feed.action;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import news.feed.config.YamlConfig;
+import news.feed.data.StaticData;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
@@ -19,12 +20,7 @@ import org.springframework.stereotype.Component;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -43,15 +39,12 @@ public class AngiNewsFeed extends Feed {
     private LocalDate selectedDate;
     private List<Novost> novosti = new ArrayList<>();
     private Map<String, List<Novost>> groupedNews = new HashMap<>();
-    private List<String>
-        keywords =
-        List.of("SOCAR", "баррель", "Роснефт", "Лукойл", "ЛУКОЙЛ", "Газпром нефт", "Башнефт", "Новатэк", "Татнефт",
-                "Сибур", "КазМунайГаз", "Сокар", "Александр Новак", "Цен нефт", "цен нефт");
+
 
     public void action() throws IOException {
         log.info("angi action begin");
         log.info("url: " + url);
-        log.info("keywords: " + keywords);
+        log.info("keywords: " + StaticData.keywordsAndGroups.keySet());
         String workingURL = url;
         extractNewsURLsToList(workingURL);
         extractNewsToCollection();
@@ -91,24 +84,33 @@ public class AngiNewsFeed extends Feed {
                 body = cleanText(body);
                 body = body + "Источник: " + novostURL.trim();
 
+
+                //for (String keyword : StaticData.keywordsAndGroups.keySet()) {
+                List<String> keyWordsFromSet = new ArrayList<>(StaticData.keywordsAndGroups.keySet());
                 outer:
-                for (String keyword : keywords) {
+                for (int i = 0; i < keyWordsFromSet.size(); i++) {
+                    String keyword = keyWordsFromSet.get(i);
                     if (!keyword.contains(" ")) {
                         if (title.contains(keyword) || body.contains(keyword)) {
-                            addNewToSpecificList(novostURL, title, body, date, keyword);
-                        } else {
-                            String[] expression = keyword.split(" ");
-                            for (String exprPart : expression) {
-                                if (!title.contains(exprPart) && !body.contains(exprPart)) {
-                                    continue outer;
-                                }
-                            }
-                            List<Novost> novosti = groupedNews.get(keyword);
-                            if (novosti == null) {
-                                novosti = new ArrayList<>();
-                            }
-                            addNewToSpecificList(novostURL, title, body, date, keyword);
+                            addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
+                            continue outer;
                         }
+                    } else {
+                        String[] expression = keyword.split(" ");
+                        for (String exprPart : expression) {
+                            if (!title.contains(exprPart) && !body.contains(exprPart)) {
+                                continue outer;
+                            }
+                        }
+                        List<Novost> novosti = groupedNews.get(keyword);
+                        if (novosti == null) {
+                            novosti = new ArrayList<>();
+                        }
+                        addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
+                        continue outer;
+                    }
+                    if (i == keyWordsFromSet.size() - 1) {
+                        addNewToSpecificList(novostURL, title, body, date, "other");
                     }
                 }
 
@@ -127,9 +129,9 @@ public class AngiNewsFeed extends Feed {
         }
         log.info(String.format("keyword %s found", keyword));
         createAndAddNewToList(novostURL, title, body, date, novosti);
+
         groupedNews.put(keyword, novosti);
     }
-
 
     private void extractNewsURLsToList(String workingURL) throws IOException {
         log.info("start adding news URLs to bulk list");
@@ -222,9 +224,9 @@ public class AngiNewsFeed extends Feed {
 
         // Write the output to a file
         FileOutputStream
-            fileOut =
-            new FileOutputStream(
-                Objects.requireNonNull(yamlConfig.getAngiExcelExportPath()));
+                fileOut =
+                new FileOutputStream(
+                        Objects.requireNonNull(yamlConfig.getAngiExcelExportPath()));
         workbook.write(fileOut);
         fileOut.close();
 
