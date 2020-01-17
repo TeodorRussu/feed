@@ -1,53 +1,59 @@
 package news.feed.data;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
-import static java.util.Map.entry;
 
 public class StaticData {
     public static final Map<String, String> keywordsAndGroups;
+    public static final List<String> orderedKeywords;
     public static int newsCounter = 0;
 
     static {
-        keywordsAndGroups = Map.ofEntries(
-                entry("Александр Новак", "Александр Новак"),
+        keywordsAndGroups = new LinkedHashMap<>();
+        keywordsAndGroups.put("Александр Новак", "Александр Новак");
 
-                entry("SOCAR", "SOCAR"),
-                entry("Сокар", "SOCAR"),
-                entry("СОКАР", "SOCAR"),
+        keywordsAndGroups.put("SOCAR", "SOCAR");
+        keywordsAndGroups.put("Сокар", "SOCAR");
+        keywordsAndGroups.put("СОКАР", "SOCAR");
 
-                entry("баррель", "Цена нефть"),
-                entry("цен нефт", "Цена нефть"),
-                entry("Цен нефт", "Цена нефть"),
-                entry("Цен Нефт", "Цена нефть"),
+        keywordsAndGroups.put("Лукойл", "ЛУКОЙЛ");
+        keywordsAndGroups.put("ЛУКОЙЛ", "ЛУКОЙЛ");
+        keywordsAndGroups.put("Lukoil", "ЛУКОЙЛ");
 
-                entry("Лукойл", "ЛУКОЙЛ"),
-                entry("ЛУКОЙЛ", "ЛУКОЙЛ"),
-                entry("Lukoil", "ЛУКОЙЛ"),
+        keywordsAndGroups.put("Газпром нефт", "Газпром нефть");
+        keywordsAndGroups.put("Газпром нефть", "Газпром нефть");
 
-                entry("Роснефт", "Роснефть"),
+        keywordsAndGroups.put("Башнефт", "Башнефть");
 
-                entry("Газпром нефт", "Газпром нефть"),
-                entry("Газпром нефть", "Газпром нефть"),
+        keywordsAndGroups.put("НОВАТЭК", "НОВАТЭК");
+        keywordsAndGroups.put("Новатэк", "НОВАТЭК");
 
-                entry("Башнефт", "Башнефть"),
-
-                entry("НОВАТЭК", "НОВАТЭК"),
-                entry("Новатэк", "НОВАТЭК"),
-
-                entry("Татнефть", "Татнефть"),
-                entry("Татанефть", "Татнефть"),
-                entry("Татнефт", "Татнефть"),
+        keywordsAndGroups.put("Татнефть", "Татнефть");
+        keywordsAndGroups.put("Татанефть", "Татнефть");
+        keywordsAndGroups.put("Татнефт", "Татнефть");
 
 
-                entry("СИБУР", "СИБУР"),
-                entry("Сибур", "СИБУР"),
+        keywordsAndGroups.put("СИБУР", "СИБУР");
+        keywordsAndGroups.put("Сибур", "СИБУР");
 
-                entry("Казмунайгаз", "КазМунайГаз"),
-                entry("КМГ", "КазМунайГаз"),
-                entry("КазМунайГаз", "КазМунайГаз"),
+        keywordsAndGroups.put("Казмунайгаз", "КазМунайГаз");
+        keywordsAndGroups.put("КМГ", "КазМунайГаз");
+        keywordsAndGroups.put("КазМунайГаз", "КазМунайГаз");
 
-                entry("Казахстан", "Казахстан")
-        );
+        keywordsAndGroups.put("Роснефт", "Роснефть");
+
+
+        keywordsAndGroups.put("Казахстан", "Казахстан");
+
+        keywordsAndGroups.put("баррель", "Цена нефть");
+        keywordsAndGroups.put("цен нефт", "Цена нефть");
+        keywordsAndGroups.put("Цен нефт", "Цена нефть");
+        keywordsAndGroups.put("Цен Нефт", "Цена нефть");
+
+        orderedKeywords = new ArrayList<>(keywordsAndGroups.keySet());
+
     }
 }

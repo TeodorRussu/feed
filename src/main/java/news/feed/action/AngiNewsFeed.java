@@ -96,9 +96,8 @@ public class AngiNewsFeed extends Feed {
     }
 
     private void addNovostToCategorisedMap(String novostURL, String date, String title, String body) {
-        List<String> keyWordsFromSet = new ArrayList<>(StaticData.keywordsAndGroups.keySet());
-        for (int i = 0; i < keyWordsFromSet.size(); i++) {
-            String keyword = keyWordsFromSet.get(i);
+        for (int i = 0; i < StaticData.orderedKeywords.size(); i++) {
+            String keyword = StaticData.orderedKeywords.get(i);
             if (!keyword.contains(" ")) {
                 if (title.contains(keyword) || body.contains(keyword)) {
                     addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
