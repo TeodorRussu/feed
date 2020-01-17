@@ -1,12 +1,7 @@
 package news.feed.action;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import news.feed.data.StaticData;
+import org.apache.poi.ss.usermodel.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -42,17 +37,17 @@ public class Feed {
     protected void createAndAddNewToList(String novostURL, String title, String body, String date,
                                          List<Novost> novosti) {
         novosti.add(
-            Novost.builder()
-                .body(body)
-                .title(title)
-                .url(novostURL)
-                .date(date)
-                .build()
+                Novost.builder()
+                        .body(body)
+                        .title(title)
+                        .url(novostURL)
+                        .date(date)
+                        .build()
         );
     }
 
     public void performToExcel(Workbook workbook, String sheetName, List<Novost> novosti, String... columns)
-        throws IOException {
+            throws IOException {
 
         // Create a Sheet
         Sheet sheet = workbook.createSheet(sheetName);
@@ -74,6 +69,7 @@ public class Feed {
         // Create rows with data
         int rowNum = 1;
         for (Novost novost : novosti) {
+            StaticData.newsCounter++;
             Row row = sheet.createRow(rowNum++);
 
             Cell titleCell = createCellAndItsStyle(cellStyle, row, 0);

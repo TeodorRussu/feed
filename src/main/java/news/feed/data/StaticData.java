@@ -6,6 +6,7 @@ import static java.util.Map.entry;
 
 public class StaticData {
     public static final Map<String, String> keywordsAndGroups;
+    public static int newsCounter = 0;
 
     static {
         keywordsAndGroups = Map.ofEntries(
@@ -44,7 +45,9 @@ public class StaticData {
 
                 entry("Казмунайгаз", "КазМунайГаз"),
                 entry("КМГ", "КазМунайГаз"),
-                entry("КазМунайГаз", "КазМунайГаз")
+                entry("КазМунайГаз", "КазМунайГаз"),
+
+                entry("Казахстан", "Казахстан")
         );
     }
 }

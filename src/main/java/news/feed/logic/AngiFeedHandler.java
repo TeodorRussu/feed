@@ -9,12 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
-import javax.mail.MessagingException;
 
 @Component
 @Slf4j
@@ -43,10 +40,11 @@ public class AngiFeedHandler {
             feed.action();
             feed.toExcel();
             emailSender.sendEmailWithAttachment(StaticData.emailTo, yamlConfig.getAngiEmailSubject(),
-                                                yamlConfig.getAngiEmailContent(), yamlConfig.getAngiExcelFilename(),
-                                                yamlConfig.getAngiExcelExportPath());
-        } catch (IOException | URISyntaxException | MessagingException e) {
+                    yamlConfig.getAngiEmailContent(), yamlConfig.getAngiExcelFilename(),
+                    yamlConfig.getAngiExcelExportPath());
+        } catch (Exception e) {
             log.error(e.getMessage());
+            e.printStackTrace();
         }
     }
 

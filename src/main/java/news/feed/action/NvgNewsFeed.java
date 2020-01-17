@@ -77,8 +77,8 @@ public class NvgNewsFeed extends Feed {
                 List<Node> bodyParagraphs = articles.get(0).childNodes();
 
                 String body =
-                    bodyParagraphs.stream().filter(child -> child.getClass().equals(TextNode.class))
-                        .map(Node::toString).collect(Collectors.joining("\n"));
+                        bodyParagraphs.stream().filter(child -> child.getClass().equals(TextNode.class))
+                                .map(Node::toString).collect(Collectors.joining("\n"));
                 body = body.trim();
 
                 if (body.trim().isEmpty()) {

@@ -84,42 +84,48 @@ public class AngiNewsFeed extends Feed {
                 body = cleanText(body);
                 body = body + "Источник: " + novostURL.trim();
 
-
-                //for (String keyword : StaticData.keywordsAndGroups.keySet()) {
-                List<String> keyWordsFromSet = new ArrayList<>(StaticData.keywordsAndGroups.keySet());
-                outer:
-                for (int i = 0; i < keyWordsFromSet.size(); i++) {
-                    String keyword = keyWordsFromSet.get(i);
-                    if (!keyword.contains(" ")) {
-                        if (title.contains(keyword) || body.contains(keyword)) {
-                            addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
-                            continue outer;
-                        }
-                    } else {
-                        String[] expression = keyword.split(" ");
-                        for (String exprPart : expression) {
-                            if (!title.contains(exprPart) && !body.contains(exprPart)) {
-                                continue outer;
-                            }
-                        }
-                        List<Novost> novosti = groupedNews.get(keyword);
-                        if (novosti == null) {
-                            novosti = new ArrayList<>();
-                        }
-                        addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
-                        continue outer;
-                    }
-                    if (i == keyWordsFromSet.size() - 1) {
-                        addNewToSpecificList(novostURL, title, body, date, "other");
-                    }
-                }
+                addNovostToCategorisedMap(novostURL, date, title, body);
 
                 Thread.sleep(200);
             } catch (Exception e) {
-                log.info("Exception" + e.getMessage());
+                log.info("Exception: " + e.getMessage());
+                e.printStackTrace();
             }
         }
         log.info("news added to collection");
+    }
+
+    private void addNovostToCategorisedMap(String novostURL, String date, String title, String body) {
+        List<String> keyWordsFromSet = new ArrayList<>(StaticData.keywordsAndGroups.keySet());
+        for (int i = 0; i < keyWordsFromSet.size(); i++) {
+            String keyword = keyWordsFromSet.get(i);
+            if (!keyword.contains(" ")) {
+                if (title.contains(keyword) || body.contains(keyword)) {
+                    addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
+                    return;
+                }
+            } else {
+                String[] expression = keyword.split(" ");
+                boolean found = true;
+                for (String exprPart : expression) {
+                    if (!title.contains(exprPart) && !body.contains(exprPart)) {
+                        found = false;
+                        break;
+                    }
+                }
+                if (found) {
+                    addNewToSpecificList(novostURL, title, body, date, StaticData.keywordsAndGroups.get(keyword));
+                    return;
+                }
+            }
+        }
+        if (novostURL.contains("90886") ||
+                novostURL.contains("%D0%9D%D0%B5%D1%84%D1%82%D1%8C") ||
+                novostURL.contains("%D0%B3%D0%B0%D0%B7")) {
+            addNewToSpecificList(novostURL, title, body, date, "НЕФТЬ И ГАЗ");
+        } else {
+            addNewToSpecificList(novostURL, title, body, date, "другие новости");
+        }
     }
 
     private void addNewToSpecificList(String novostURL, String title, String body, String date, String keyword) {
@@ -127,7 +133,7 @@ public class AngiNewsFeed extends Feed {
         if (novosti == null) {
             novosti = new ArrayList<>();
         }
-        log.info(String.format("keyword %s found", keyword));
+        log.info(String.format("keyword %s found, novost: %s", keyword, title));
         createAndAddNewToList(novostURL, title, body, date, novosti);
 
         groupedNews.put(keyword, novosti);
@@ -154,9 +160,10 @@ public class AngiNewsFeed extends Feed {
                     return;
                 }
 
+                novost.getElementsByClass("section_link").remove();
+
                 //create novost url
                 Element el = novost.select("a").first();
-//                String novostURL = env.getProperty("angiBaseURL") + el.attr("href");
                 String novostURL = yamlConfig.getAngiBaseURL() + el.attr("href");
 
                 relevantURLS.put(novostURL, novostDate.toString());
@@ -212,6 +219,7 @@ public class AngiNewsFeed extends Feed {
 
 
     public void toExcel() throws IOException {
+
         log.info("start exporting to excel");
         Workbook workbook = new XSSFWorkbook();
 
@@ -232,6 +240,7 @@ public class AngiNewsFeed extends Feed {
 
         // Closing the workbook
         workbook.close();
+        log.info(String.format("exported to excel %d news", StaticData.newsCounter));
     }
 
 }

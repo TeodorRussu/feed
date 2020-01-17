@@ -9,12 +9,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.mail.MessagingException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-
-import javax.mail.MessagingException;
 
 @Component
 public class NvgFeedHandler {
@@ -36,10 +35,10 @@ public class NvgFeedHandler {
 
     public void nvgAction(String dateFrom, String dateTo, String q) {
         dateFrom =
-            LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE)
-                .format(DateTimeFormatter.ofPattern("dd.MM.uuuu"));
+                LocalDate.parse(dateFrom, DateTimeFormatter.ISO_LOCAL_DATE)
+                        .format(DateTimeFormatter.ofPattern("dd.MM.uuuu"));
         dateTo =
-            LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE).format(DateTimeFormatter.ofPattern("dd.MM.uuuu"));
+                LocalDate.parse(dateTo, DateTimeFormatter.ISO_LOCAL_DATE).format(DateTimeFormatter.ofPattern("dd.MM.uuuu"));
 
         try {
             String url = env.getNgvNewsPath();
@@ -50,8 +49,8 @@ public class NvgFeedHandler {
             feed.action();
             feed.toExcel();
             emailSender.sendEmailWithAttachment(StaticData.emailTo, env.getNgvEmailSubject(),
-                                                env.getNgvEmailContent(), env.getNgvExcelFilename(),
-                                                env.getNgvExcelExportPath());
+                    env.getNgvEmailContent(), env.getNgvExcelFilename(),
+                    env.getNgvExcelExportPath());
         } catch (IOException | URISyntaxException | MessagingException e) {
             e.printStackTrace();
         }
