@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.ServletContext;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -230,10 +232,12 @@ public class AngiNewsFeed extends Feed {
         }
 
         // Write the output to a file
+        String file=new File(yamlConfig.getExcelPathRoot()+ yamlConfig.getAngiExcelFilename()).getAbsolutePath();
+        File file2=new File(file);
+
         FileOutputStream
                 fileOut =
-                new FileOutputStream(
-                        Objects.requireNonNull(yamlConfig.getAngiExcelExportPath()));
+                new FileOutputStream(file2);
         workbook.write(fileOut);
         fileOut.close();
 

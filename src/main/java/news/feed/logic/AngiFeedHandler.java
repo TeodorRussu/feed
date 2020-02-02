@@ -41,7 +41,7 @@ public class AngiFeedHandler {
             feed.toExcel();
             emailSender.sendEmailWithAttachment(StaticData.emailTo, yamlConfig.getAngiEmailSubject(),
                     yamlConfig.getAngiEmailContent(), yamlConfig.getAngiExcelFilename(),
-                    yamlConfig.getAngiExcelExportPath());
+                    yamlConfig.getExcelPathRoot()+yamlConfig.getAngiExcelFilename());
         } catch (Exception e) {
             log.error(e.getMessage());
             e.printStackTrace();

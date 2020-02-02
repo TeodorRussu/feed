@@ -13,7 +13,6 @@ public class YamlConfig {
 
     private String ngvBaseURL;
     private String ngvNewsPath;
-    private String ngvExcelExportPath;
     private String ngvExcelFilename;
     private String ngvEmailSubject;
     private String ngvEmailContent;
@@ -25,12 +24,13 @@ public class YamlConfig {
 
     private String angiBaseURL;
     private String angiNewsPath;
-    private String angiExcelExportPath;
     private String angiExcelFilename;
     private String angiEmailSubject;
     private String angiEmailContent;
     private String angiExcelSheetName;
     private String angiFilterKeywords;
+
+    private String excelPathRoot;
 
 
 }

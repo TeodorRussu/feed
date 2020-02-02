@@ -48,12 +48,19 @@ public class StaticData {
 
         keywordsAndGroups.put("Казахстан", "Казахстан");
 
+        keywordsAndGroups.put("бар", "Цена нефть");
         keywordsAndGroups.put("баррель", "Цена нефть");
         keywordsAndGroups.put("цен нефт", "Цена нефть");
         keywordsAndGroups.put("Цен нефт", "Цена нефть");
         keywordsAndGroups.put("Цен Нефт", "Цена нефть");
 
         orderedKeywords = new ArrayList<>(keywordsAndGroups.keySet());
+
+
+
+
+
+
 
     }
 }

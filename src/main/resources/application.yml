@@ -2,7 +2,9 @@ angiBaseURL: http://www.angi.ru
 #angiNewsPath: http://angi.ru/section/90886-%D0%9D%D0%B5%D1%84%D1%82%D1%8C-%D0%B8-%D0%B3%D0%B0%D0%B7/
 angiNewsPath: http://angi.ru/section/all-%D0%9D%D0%BE%D0%B2%D0%BE%D1%81%D1%82%D0%B8/
 
-angiExcelExportPath: /Users/rusiashka/Desktop/angi_news.xlsx
+excelPathRoot: src/main/resources/generated/
+
+
 angiExcelFilename: angi_news.xlsx
 angiEmailSubject: ANGI news
 angiEmailContent: ANGI - From rusiashka with love ;)
@@ -11,7 +13,6 @@ angiFilterKeywords: Роснефт, Лукойл, Газпром нефт, Ба�
 
 ngvBaseURL: http://www.ngv.ru
 ngvNewsPath: http://www.ngv.ru/news/
-ngvExcelExportPath: /Users/rusiashka/Desktop/ngv_news.xlsx
 ngvExcelFilename: nvg_news.xlsx
 ngvEmailSubject: NGV news
 ngvEmailContent: From rusiashka with love ;)

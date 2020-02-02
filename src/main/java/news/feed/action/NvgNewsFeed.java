@@ -18,12 +18,12 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -158,7 +158,9 @@ public class NvgNewsFeed extends Feed {
         performToExcel(workbook, yamlConfig.getNgvExcelSheetName(), novosti, columns);
 
         // Write the output to a file
-        FileOutputStream fileOut = new FileOutputStream(Objects.requireNonNull(yamlConfig.getNgvExcelExportPath()));
+        String file = new File(yamlConfig.getExcelPathRoot() + yamlConfig.getNgvExcelFilename()).getAbsolutePath();
+        File file2 = new File(file);
+        FileOutputStream fileOut = new FileOutputStream(file2);
         workbook.write(fileOut);
         fileOut.close();
 

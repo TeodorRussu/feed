@@ -50,7 +50,7 @@ public class NvgFeedHandler {
             feed.toExcel();
             emailSender.sendEmailWithAttachment(StaticData.emailTo, env.getNgvEmailSubject(),
                     env.getNgvEmailContent(), env.getNgvExcelFilename(),
-                    env.getNgvExcelExportPath());
+                    env.getExcelPathRoot()+env.getNgvExcelFilename());
         } catch (IOException | URISyntaxException | MessagingException e) {
             e.printStackTrace();
         }
